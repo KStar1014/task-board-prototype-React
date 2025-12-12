@@ -236,47 +236,52 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </Box>
             {imageItems.length > 0 && (
               <Grid container spacing={2}>
-                {imageItems.map((item, index) => (
-                  <Grid item xs={6} sm={4} key={item.type === 'existing' ? item.attachment.id : index}>
-                    <Card>
-                      <Box sx={{ position: 'relative' }}>
-                        <CardMedia
-                          component="img"
-                          image={item.type === 'existing' ? item.attachment.data : item.preview}
-                          alt={item.type === 'existing' ? item.attachment.name : item.file.name}
-                          sx={{ height: 120, objectFit: 'cover' }}
-                        />
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleRemoveImage(index)}
-                          sx={{
-                            position: 'absolute',
-                            top: 4,
-                            right: 4,
-                            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                            '&:hover': {
-                              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                            },
-                          }}
-                          aria-label={`Remove ${item.type === 'existing' ? item.attachment.name : item.file.name}`}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Box>
-                      <Box p={1}>
-                        <Typography variant="caption" noWrap title={item.type === 'existing' ? item.attachment.name : item.file.name}>
-                          {item.type === 'existing' ? item.attachment.name : item.file.name}
-                        </Typography>
-                        {item.type === 'existing' && (
-                          <Typography variant="caption" display="block" color="text.secondary" sx={{ fontSize: '0.7rem', mt: 0.5 }}>
-                            Existing
+                {imageItems.map((item, index) => {
+                  const key = item.type === 'existing' 
+                    ? `existing-${item.attachment.id}` 
+                    : `new-${index}-${item.file.name}`;
+                  return (
+                    <Grid item xs={6} sm={4} key={key}>
+                      <Card>
+                        <Box sx={{ position: 'relative' }}>
+                          <CardMedia
+                            component="img"
+                            image={item.type === 'existing' ? item.attachment.data : item.preview}
+                            alt={item.type === 'existing' ? item.attachment.name : item.file.name}
+                            sx={{ height: 120, objectFit: 'cover' }}
+                          />
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleRemoveImage(index)}
+                            sx={{
+                              position: 'absolute',
+                              top: 4,
+                              right: 4,
+                              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                              '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                              },
+                            }}
+                            aria-label={`Remove ${item.type === 'existing' ? item.attachment.name : item.file.name}`}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Box>
+                        <Box p={1}>
+                          <Typography variant="caption" noWrap title={item.type === 'existing' ? item.attachment.name : item.file.name}>
+                            {item.type === 'existing' ? item.attachment.name : item.file.name}
                           </Typography>
-                        )}
-                      </Box>
-                    </Card>
-                  </Grid>
-                ))}
+                          {item.type === 'existing' && (
+                            <Typography variant="caption" display="block" color="text.secondary" sx={{ fontSize: '0.7rem', mt: 0.5 }}>
+                              Existing
+                            </Typography>
+                          )}
+                        </Box>
+                      </Card>
+                    </Grid>
+                  );
+                })}
               </Grid>
             )}
           </Box>
