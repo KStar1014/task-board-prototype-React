@@ -92,15 +92,17 @@ export const Column: React.FC<ColumnProps> = ({
         p: 2,
         minWidth: 300,
         maxWidth: 400,
-        backgroundColor: isOver ? 'primary.light' : 'background.paper',
+        backgroundColor: isOver ? 'rgba(102, 126, 234, 0.05)' : '#ffffff',
         backgroundImage: isOver 
-          ? 'linear-gradient(to bottom, rgba(25, 118, 210, 0.08), rgba(25, 118, 210, 0.04))'
-          : 'none',
+          ? 'linear-gradient(to bottom, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.06))'
+          : 'linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%)',
         border: isOver ? '2px dashed' : '1px solid',
-        borderColor: isOver ? 'primary.main' : 'divider',
+        borderColor: isOver ? '#667eea' : '#e0e0e0',
         transition: 'all 0.2s ease-in-out',
         transform: isDragging ? 'scale(0.98)' : 'scale(1)',
-        boxShadow: isOver ? 4 : 1,
+        boxShadow: isOver 
+          ? '0 8px 16px rgba(102, 126, 234, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1)'
+          : '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06)',
         position: 'relative',
         '&::before': isOver ? {
           content: '""',
@@ -110,7 +112,7 @@ export const Column: React.FC<ColumnProps> = ({
           right: 0,
           bottom: 0,
           border: '2px solid',
-          borderColor: 'primary.main',
+          borderColor: '#667eea',
           borderRadius: 1,
           pointerEvents: 'none',
           animation: 'pulse 1.5s ease-in-out infinite',
@@ -125,8 +127,11 @@ export const Column: React.FC<ColumnProps> = ({
         },
         '&:focus-visible': {
           outline: '2px solid',
-          outlineColor: 'primary.main',
+          outlineColor: '#667eea',
           outlineOffset: 2,
+        },
+        '&:hover': {
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)',
         },
       }}
       {...attributes}
@@ -138,13 +143,31 @@ export const Column: React.FC<ColumnProps> = ({
         justifyContent="space-between" 
         alignItems="center" 
         mb={2}
-        {...listeners}
-        sx={{ cursor: 'grab', '&:active': { cursor: 'grabbing' } }}
       >
-        <Typography variant="h6" component="h2">
+        <Typography 
+          variant="h6" 
+          component="h2"
+          {...listeners}
+          sx={{ 
+            cursor: 'grab', 
+            '&:active': { cursor: 'grabbing' },
+            flex: 1,
+            userSelect: 'none',
+            fontWeight: 600,
+            color: '#2d3748',
+            letterSpacing: '0.3px',
+          }}
+        >
           {column.name}
         </Typography>
-        <Box display="flex" alignItems="center" gap={1} onClick={(e) => e.stopPropagation()}>
+        <Box 
+          display="flex" 
+          alignItems="center" 
+          gap={1} 
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
           <FormControl size="small" sx={{ minWidth: 100 }}>
             <Select
               value={sortOption}
@@ -168,6 +191,8 @@ export const Column: React.FC<ColumnProps> = ({
               e.stopPropagation();
               onEditColumn();
             }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             aria-label={`Edit column ${column.name}`}
           >
             <Edit fontSize="small" />
@@ -178,6 +203,8 @@ export const Column: React.FC<ColumnProps> = ({
               e.stopPropagation();
               onDeleteColumn();
             }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             aria-label={`Delete column ${column.name}`}
           >
             <Delete fontSize="small" />

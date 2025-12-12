@@ -192,8 +192,28 @@ export const Board: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4" component="h1">
+      <Box 
+        display="flex" 
+        justifyContent="space-between" 
+        alignItems="center" 
+        mb={4}
+        sx={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: 2,
+          p: 3,
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
+        }}
+      >
+        <Typography 
+          variant="h4" 
+          component="h1"
+          sx={{
+            color: 'white',
+            fontWeight: 600,
+            letterSpacing: '0.5px',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+          }}
+        >
           Task Board
         </Typography>
         <Button
@@ -204,6 +224,16 @@ export const Board: React.FC = () => {
             setIsColumnFormOpen(true);
           }}
           aria-label="Add new column"
+          sx={{
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            color: 'white',
+            fontWeight: 500,
+            textTransform: 'none',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+            },
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+          }}
         >
           Add Column
         </Button>
