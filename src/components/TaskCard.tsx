@@ -21,6 +21,7 @@ interface TaskCardProps {
   onToggleFavorite: () => void;
   onClick: () => void;
   isDragging?: boolean;
+  disableDrag?: boolean;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -30,6 +31,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onToggleFavorite,
   onClick,
   isDragging: isDraggingOverlay = false,
+  disableDrag = false,
 }) => {
   const {
     attributes,

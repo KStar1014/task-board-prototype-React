@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Task } from '../types/Task';
-import { Column } from '../types/Column';
+import { Column, SortOption } from '../types/Column';
 import { Attachment } from '../types/Attachment';
 import { useLocalStorage } from './useLocalStorage';
 
@@ -439,21 +439,39 @@ export function useBoardState() {
 
   const getSortedTasks = useCallback((columnId: string) => {
     const columnTasks = tasks[columnId] || [];
+    const column = columns.find(c => c.id === columnId);
+    const sortOption: SortOption = column?.sortOption || 'normal';
     
+    // If sort is normal, maintain current order (favorites first, then by original order)
+    if (sortOption === 'normal') {
+      const favorites = columnTasks.filter(t => t.isFavorite);
+      const nonFavorites = columnTasks.filter(t => !t.isFavorite);
+      return [...favorites, ...nonFavorites];
+    }
+    
+    // For A-Z or Z-A, sort all tasks alphabetically
+    const sortByName = (a: Task, b: Task) => {
+      const comparison = a.name.localeCompare(b.name);
+      return sortOption === 'A-Z' ? comparison : -comparison;
+    };
+    
+    // Still prioritize favorites, but sort within each group
     const favorites = columnTasks.filter(t => t.isFavorite);
     const nonFavorites = columnTasks.filter(t => !t.isFavorite);
-
-    const sortByName = (a: Task, b: Task) => a.name.localeCompare(b.name);
-
+    
     const sortedFavorites = [...favorites].sort(sortByName);
     const sortedNonFavorites = [...nonFavorites].sort(sortByName);
-
+    
     return [...sortedFavorites, ...sortedNonFavorites];
-  }, [tasks]);
+  }, [tasks, columns]);
 
   const sortedColumns = useMemo(() => {
     return [...columns].sort((a, b) => a.order - b.order);
   }, [columns]);
+
+  const updateColumnSortOption = useCallback((columnId: string, sortOption: SortOption) => {
+    updateColumn(columnId, { sortOption });
+  }, [updateColumn]);
 
   return {
     tasks: getAllTasks(), // Return flat array for backward compatibility
@@ -471,6 +489,7 @@ export function useBoardState() {
     addAttachment,
     removeAttachment,
     getSortedTasks,
+    updateColumnSortOption,
   };
 }
 

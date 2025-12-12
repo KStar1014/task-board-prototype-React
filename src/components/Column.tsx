@@ -5,6 +5,9 @@ import {
   Box,
   IconButton,
   Button,
+  Select,
+  MenuItem,
+  FormControl,
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useSortable } from '@dnd-kit/sortable';
@@ -14,7 +17,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Column as ColumnType } from '../types/Column';
+import { Column as ColumnType, SortOption } from '../types/Column';
 import { Task } from '../types/Task';
 import { TaskCard } from './TaskCard';
 import { TASK_TYPE, COLUMN_TYPE } from '../dnd/dragConfig';
@@ -29,6 +32,7 @@ interface ColumnProps {
   onTaskClick: (task: Task) => void;
   onEditColumn: () => void;
   onDeleteColumn: () => void;
+  onSortOptionChange: (sortOption: SortOption) => void;
 }
 
 export const Column: React.FC<ColumnProps> = ({
@@ -41,7 +45,9 @@ export const Column: React.FC<ColumnProps> = ({
   onTaskClick,
   onEditColumn,
   onDeleteColumn,
+  onSortOptionChange,
 }) => {
+  const sortOption: SortOption = column.sortOption || 'normal';
   const {
     attributes,
     listeners,
@@ -138,7 +144,24 @@ export const Column: React.FC<ColumnProps> = ({
         <Typography variant="h6" component="h2">
           {column.name}
         </Typography>
-        <Box onClick={(e) => e.stopPropagation()}>
+        <Box display="flex" alignItems="center" gap={1} onClick={(e) => e.stopPropagation()}>
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <Select
+              value={sortOption}
+              onChange={(e) => {
+                e.stopPropagation();
+                onSortOptionChange(e.target.value as SortOption);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              sx={{ fontSize: '0.875rem' }}
+            >
+              <MenuItem value="normal">Normal</MenuItem>
+              <MenuItem value="A-Z">A-Z</MenuItem>
+              <MenuItem value="Z-A">Z-A</MenuItem>
+            </Select>
+          </FormControl>
           <IconButton
             size="small"
             onClick={(e) => {
@@ -162,7 +185,10 @@ export const Column: React.FC<ColumnProps> = ({
         </Box>
       </Box>
 
-      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+      <SortableContext 
+        items={taskIds} 
+        strategy={verticalListSortingStrategy}
+      >
         <Box>
           {tasks.map((task) => (
             <TaskCard

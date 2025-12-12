@@ -19,7 +19,7 @@ import { TaskForm } from './TaskForm';
 import { ColumnForm } from './ColumnForm';
 import { TaskDetails } from './TaskDetails';
 import { Task } from '../types/Task';
-import { Column as ColumnType } from '../types/Column';
+import { Column as ColumnType, SortOption } from '../types/Column';
 
 export const Board: React.FC = () => {
   const {
@@ -37,6 +37,7 @@ export const Board: React.FC = () => {
     addAttachment,
     removeAttachment,
     getSortedTasks,
+    updateColumnSortOption,
   } = useBoardState();
 
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
@@ -139,6 +140,19 @@ export const Board: React.FC = () => {
         moveTask(activeId, overColumn.id, newOrder);
       } else if (overTask) {
         const targetColumnId = overTask.columnId;
+        const sourceColumnId = task.columnId;
+        
+        // If dragging within the same column, check if sort allows reordering
+        if (targetColumnId === sourceColumnId) {
+          const targetColumn = columns.find(col => col.id === targetColumnId);
+          const sortOption = targetColumn?.sortOption || 'normal';
+          
+          // Only allow reordering within the same column if sort is 'normal'
+          if (sortOption !== 'normal') {
+            return; // Prevent reordering within the same column
+          }
+        }
+        
         const targetTasks = getSortedTasks(targetColumnId);
         const overIndex = targetTasks.findIndex(t => t.id === overId);
         moveTask(activeId, targetColumnId, overIndex);
@@ -286,6 +300,9 @@ export const Board: React.FC = () => {
                   }}
                   onDeleteColumn={() => {
                     deleteColumn(column.id);
+                  }}
+                  onSortOptionChange={(sortOption: SortOption) => {
+                    updateColumnSortOption(column.id, sortOption);
                   }}
                 />
               );
