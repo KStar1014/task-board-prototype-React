@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Card,
   CardContent,
+  CardMedia,
   Typography,
   IconButton,
   Box,
@@ -61,6 +62,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     }
   };
 
+  // Get the first image attachment for preview
+  const imageAttachment = task.attachments?.find(att => att.type.startsWith('image/'));
+
   return (
     <Card
       ref={setNodeRef}
@@ -89,6 +93,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       {...(isDraggingOverlay ? {} : attributes)}
       {...(isDraggingOverlay ? {} : listeners)}
     >
+      {imageAttachment && (
+        <CardMedia
+          component="img"
+          image={imageAttachment.data}
+          alt={imageAttachment.name}
+          sx={{
+            height: 160,
+            objectFit: 'cover',
+            width: '100%',
+          }}
+        />
+      )}
       <CardContent>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
           <Box flex={1}>
