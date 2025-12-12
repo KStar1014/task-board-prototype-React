@@ -18,16 +18,25 @@ import {
 import { AttachFile, Delete } from '@mui/icons-material';
 import { Task } from '../types/Task';
 import { Column } from '../types/Column';
+import { Attachment } from '../types/Attachment';
 
 interface TaskFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>, files?: File[]) => Promise<void> | void;
+  onSubmit: (
+    task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>, 
+    files?: File[],
+    removedAttachmentIds?: string[]
+  ) => Promise<void> | void;
   columns: Column[];
   initialTask?: Task;
   defaultColumnId?: string;
   title?: string;
 }
+
+type ImageItem = 
+  | { type: 'existing'; attachment: Attachment }
+  | { type: 'new'; file: File; preview: string };
 
 export const TaskForm: React.FC<TaskFormProps> = ({
   open,
@@ -43,7 +52,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [deadline, setDeadline] = useState('');
   const [favorite, setFavorite] = useState(false);
   const [columnId, setColumnId] = useState(columns[0]?.id || '');
-  const [selectedFiles, setSelectedFiles] = useState<Array<{ file: File; preview: string }>>([]);
+  const [imageItems, setImageItems] = useState<ImageItem[]>([]);
+  const [removedAttachmentIds, setRemovedAttachmentIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -54,15 +64,22 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         setDeadline(initialTask.deadline || '');
         setFavorite(initialTask.isFavorite);
         setColumnId(initialTask.columnId);
+        
+        // Load existing attachments as image items
+        const existingAttachments: ImageItem[] = (initialTask.attachments || [])
+          .filter(att => att.type.startsWith('image/'))
+          .map(att => ({ type: 'existing' as const, attachment: att }));
+        setImageItems(existingAttachments);
+        setRemovedAttachmentIds(new Set());
       } else {
         setTitleValue('');
         setDescription('');
         setDeadline('');
         setFavorite(false);
         setColumnId(defaultColumnId || columns[0]?.id || '');
+        setImageItems([]);
+        setRemovedAttachmentIds(new Set());
       }
-      // Reset files when form opens/closes
-      setSelectedFiles([]);
     }
   }, [open, initialTask, columns, defaultColumnId]);
 
@@ -76,7 +93,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         const reader = new FileReader();
         reader.onload = (event) => {
           const url = event.target?.result as string;
-          setSelectedFiles(prev => [...prev, { file, preview: url }]);
+          setImageItems(prev => [...prev, { type: 'new', file, preview: url }]);
         };
         reader.readAsDataURL(file);
       });
@@ -87,13 +104,27 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     }
   };
 
-  const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveImage = (index: number) => {
+    const item = imageItems[index];
+    if (item.type === 'existing') {
+      // Mark existing attachment for removal
+      setRemovedAttachmentIds(prev => new Set(prev).add(item.attachment.id));
+    }
+    // Remove from display
+    setImageItems(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (titleValue.trim() && columnId) {
+      // Get only new files (not existing attachments)
+      const newFiles = imageItems
+        .filter(item => item.type === 'new')
+        .map(item => item.file);
+      
+      // Get removed attachment IDs
+      const removedIds = Array.from(removedAttachmentIds);
+      
       await onSubmit({
         name: titleValue.trim(),
         description: description.trim(),
@@ -101,7 +132,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         isFavorite: favorite,
         columnId,
         imageUrl: null,
-      }, selectedFiles.length > 0 ? selectedFiles.map(item => item.file) : undefined);
+      }, newFiles.length > 0 ? newFiles : undefined, removedIds.length > 0 ? removedIds : undefined);
       onClose();
     }
   };
@@ -182,7 +213,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           <Box sx={{ mt: 3 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
               <Typography variant="subtitle1">
-                Images ({selectedFiles.length})
+                Images ({imageItems.length})
               </Typography>
               <Button
                 variant="outlined"
@@ -203,22 +234,22 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 aria-label="File input"
               />
             </Box>
-            {selectedFiles.length > 0 && (
+            {imageItems.length > 0 && (
               <Grid container spacing={2}>
-                {selectedFiles.map((item, index) => (
-                  <Grid item xs={6} sm={4} key={index}>
+                {imageItems.map((item, index) => (
+                  <Grid item xs={6} sm={4} key={item.type === 'existing' ? item.attachment.id : index}>
                     <Card>
                       <Box sx={{ position: 'relative' }}>
                         <CardMedia
                           component="img"
-                          image={item.preview}
-                          alt={item.file.name}
+                          image={item.type === 'existing' ? item.attachment.data : item.preview}
+                          alt={item.type === 'existing' ? item.attachment.name : item.file.name}
                           sx={{ height: 120, objectFit: 'cover' }}
                         />
                         <IconButton
                           size="small"
                           color="error"
-                          onClick={() => handleRemoveFile(index)}
+                          onClick={() => handleRemoveImage(index)}
                           sx={{
                             position: 'absolute',
                             top: 4,
@@ -228,15 +259,20 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                               backgroundColor: 'rgba(255, 255, 255, 0.9)',
                             },
                           }}
-                          aria-label={`Remove ${item.file.name}`}
+                          aria-label={`Remove ${item.type === 'existing' ? item.attachment.name : item.file.name}`}
                         >
                           <Delete fontSize="small" />
                         </IconButton>
                       </Box>
                       <Box p={1}>
-                        <Typography variant="caption" noWrap title={item.file.name}>
-                          {item.file.name}
+                        <Typography variant="caption" noWrap title={item.type === 'existing' ? item.attachment.name : item.file.name}>
+                          {item.type === 'existing' ? item.attachment.name : item.file.name}
                         </Typography>
+                        {item.type === 'existing' && (
+                          <Typography variant="caption" display="block" color="text.secondary" sx={{ fontSize: '0.7rem', mt: 0.5 }}>
+                            Existing
+                          </Typography>
+                        )}
                       </Box>
                     </Card>
                   </Grid>

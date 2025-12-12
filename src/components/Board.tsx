@@ -49,9 +49,28 @@ export const Board: React.FC = () => {
   const [defaultColumnId, setDefaultColumnId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
 
-  const handleCreateTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>, files?: File[]) => {
+  const handleCreateTask = async (
+    taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>, 
+    files?: File[],
+    removedAttachmentIds?: string[]
+  ) => {
     if (editingTask) {
       updateTask(editingTask.id, taskData);
+      
+      // Remove attachments that were marked for removal
+      if (removedAttachmentIds && removedAttachmentIds.length > 0) {
+        for (const attachmentId of removedAttachmentIds) {
+          removeAttachment(editingTask.id, attachmentId);
+        }
+      }
+      
+      // Add new attachments if files were provided
+      if (files && files.length > 0) {
+        for (const file of files) {
+          await addAttachment(editingTask.id, file, taskData.columnId);
+        }
+      }
+      
       setEditingTask(null);
     } else {
       // If files are provided, create task with attachments in a single operation
