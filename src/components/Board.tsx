@@ -25,6 +25,7 @@ export const Board: React.FC = () => {
   const {
     columns,
     createTask,
+    createTaskWithAttachments,
     updateTask,
     deleteTask,
     createColumn,
@@ -53,37 +54,13 @@ export const Board: React.FC = () => {
       updateTask(editingTask.id, taskData);
       setEditingTask(null);
     } else {
-      // Create the task first - this is synchronous and updates state immediately
-      const taskId = createTask(taskData);
-      
-      // Add attachments if files were provided
-      // Pass columnId to directly target the correct column
+      // If files are provided, create task with attachments in a single operation
+      // This avoids race conditions with React state updates
       if (files && files.length > 0) {
-        // Retry adding attachments with a small delay to ensure state is updated
-        const addAttachmentsWithRetry = async (retries = 3) => {
-          for (let i = 0; i < retries; i++) {
-            try {
-              await new Promise(resolve => setTimeout(resolve, 50 * (i + 1)));
-              for (const file of files) {
-                await addAttachment(taskId, file, taskData.columnId);
-              }
-              return; // Success
-            } catch (error) {
-              if (i === retries - 1) {
-                console.error('Error adding attachments after retries:', error);
-                throw error;
-              }
-              console.log(`Retry ${i + 1} adding attachments...`);
-            }
-          }
-        };
-        
-        try {
-          await addAttachmentsWithRetry();
-        } catch (error) {
-          console.error('Failed to add attachments after retries:', error);
-          // Task is already created, so we continue even if attachments fail
-        }
+        await createTaskWithAttachments(taskData, files);
+      } else {
+        // No files, just create the task normally
+        createTask(taskData);
       }
     }
     setIsTaskFormOpen(false);

@@ -104,6 +104,58 @@ export function useBoardState() {
     setBoardState(updater);
   }, [setBoardState]);
 
+  const createTaskWithAttachments = useCallback(async (
+    task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>,
+    files: File[]
+  ): Promise<string> => {
+    // Read all files first
+    const filePromises = files.map(file => {
+      return new Promise<{ file: File; data: string }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const data = e.target?.result as string;
+          resolve({ file, data });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
+
+    const fileData = await Promise.all(filePromises);
+
+    // Create attachments from file data
+    const attachments: Attachment[] = fileData.map(({ file, data }) => ({
+      id: `attachment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: file.name,
+      type: file.type,
+      data,
+    }));
+
+    // Create task with attachments in a single state update
+    const now = new Date().toISOString();
+    const taskId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newTask: Task = {
+      ...task,
+      id: taskId,
+      createdAt: now,
+      updatedAt: now,
+      attachments,
+    };
+
+    updateState((state) => {
+      const columnTasks = state.tasks[task.columnId] || [];
+      return {
+        ...state,
+        tasks: {
+          ...state.tasks,
+          [task.columnId]: [...columnTasks, newTask],
+        },
+      };
+    });
+
+    return taskId;
+  }, [updateState]);
+
   const createTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>): string => {
     const now = new Date().toISOString();
     const taskId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -407,6 +459,7 @@ export function useBoardState() {
     tasks: getAllTasks(), // Return flat array for backward compatibility
     columns: sortedColumns,
     createTask,
+    createTaskWithAttachments,
     updateTask,
     deleteTask,
     createColumn,
