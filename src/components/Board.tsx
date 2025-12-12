@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -17,7 +18,6 @@ import { Column } from './Column';
 import { TaskCard } from './TaskCard';
 import { TaskForm } from './TaskForm';
 import { ColumnForm } from './ColumnForm';
-import { TaskDetails } from './TaskDetails';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Task } from '../types/Task';
 import { Column as ColumnType, SortOption } from '../types/Column';
@@ -41,12 +41,11 @@ export const Board: React.FC = () => {
     updateColumnSortOption,
   } = useBoardState();
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isColumnFormOpen, setIsColumnFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingColumn, setEditingColumn] = useState<ColumnType | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [defaultColumnId, setDefaultColumnId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
@@ -191,6 +190,23 @@ export const Board: React.FC = () => {
       }
     }
   };
+
+  // Handle URL parameter for editing task
+  useEffect(() => {
+    const editTaskId = searchParams.get('edit');
+    if (editTaskId) {
+      const taskToEdit = columns
+        .flatMap(col => getSortedTasks(col.id))
+        .find(t => t.id === editTaskId);
+      if (taskToEdit) {
+        setEditingTask(taskToEdit);
+        setIsTaskFormOpen(true);
+        // Remove the edit parameter from URL
+        searchParams.delete('edit');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [searchParams, setSearchParams, columns, getSortedTasks]);
 
   const columnIds = columns.map(c => c.id);
 
@@ -343,8 +359,7 @@ export const Board: React.FC = () => {
                     }
                   }}
                   onTaskClick={(task) => {
-                    setSelectedTask(task);
-                    setIsTaskDetailsOpen(true);
+                    // Navigation is handled by TaskCard component
                   }}
                   onEditColumn={() => {
                     setEditingColumn(column);
@@ -393,52 +408,6 @@ export const Board: React.FC = () => {
         title={editingColumn ? 'Edit Column' : 'Create Column'}
       />
 
-      {selectedTask && (
-        <TaskDetails
-          open={isTaskDetailsOpen}
-          onClose={() => {
-            setIsTaskDetailsOpen(false);
-            setSelectedTask(null);
-          }}
-          task={selectedTask}
-          onEdit={() => {
-            setIsTaskDetailsOpen(false);
-            setEditingTask(selectedTask);
-            setIsTaskFormOpen(true);
-          }}
-          onDelete={() => {
-            setConfirmDialog({
-              open: true,
-              type: 'task',
-              id: selectedTask.id,
-              name: selectedTask.name,
-            });
-          }}
-          onToggleFavorite={() => {
-            updateTask(selectedTask.id, { isFavorite: !selectedTask.isFavorite });
-            setSelectedTask({ ...selectedTask, isFavorite: !selectedTask.isFavorite });
-          }}
-          onAddAttachment={async (file) => {
-            await addAttachment(selectedTask.id, file);
-            const updatedTask = columns
-              .flatMap(col => getSortedTasks(col.id))
-              .find(t => t.id === selectedTask.id);
-            if (updatedTask) {
-              setSelectedTask(updatedTask);
-            }
-          }}
-          onRemoveAttachment={(attachmentId) => {
-            removeAttachment(selectedTask.id, attachmentId);
-            const updatedTask = columns
-              .flatMap(col => getSortedTasks(col.id))
-              .find(t => t.id === selectedTask.id);
-            if (updatedTask) {
-              setSelectedTask(updatedTask);
-            }
-          }}
-        />
-      )}
-
       <ConfirmDialog
         open={confirmDialog.open}
         title={confirmDialog.type === 'task' ? 'Delete Task' : 'Delete Column'}
@@ -449,14 +418,9 @@ export const Board: React.FC = () => {
         }
         confirmText="Delete"
         cancelText="Cancel"
-        onConfirm={() => {
+          onConfirm={() => {
           if (confirmDialog.type === 'task' && confirmDialog.id) {
             deleteTask(confirmDialog.id);
-            // If the task was open in details, close it
-            if (selectedTask?.id === confirmDialog.id) {
-              setIsTaskDetailsOpen(false);
-              setSelectedTask(null);
-            }
           } else if (confirmDialog.type === 'column' && confirmDialog.id) {
             deleteColumn(confirmDialog.id);
           }

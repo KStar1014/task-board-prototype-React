@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -34,6 +35,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   isDragging: isDraggingOverlay = false,
   disableDrag = false,
 }) => {
+  const navigate = useNavigate();
   const {
     attributes,
     listeners,
@@ -58,8 +60,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onClick();
+      navigate(`/task/${task.id}`);
     }
+  };
+
+  const handleCardClick = () => {
+    navigate(`/task/${task.id}`);
   };
 
   // Get the first image attachment for preview
@@ -87,7 +93,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           boxShadow: 2,
         }),
       }}
-      onClick={onClick}
+      onClick={handleCardClick}
       onKeyDown={handleKeyDown}
       aria-label={`Task: ${task.name}`}
       {...(isDraggingOverlay ? {} : attributes)}
