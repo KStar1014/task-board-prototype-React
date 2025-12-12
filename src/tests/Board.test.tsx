@@ -15,6 +15,7 @@ const mockBoardState = {
     { id: 'in-progress', name: 'In Progress', order: 1 },
   ],
   createTask: jest.fn(),
+  createTaskWithAttachments: jest.fn(),
   updateTask: jest.fn(),
   deleteTask: jest.fn(),
   createColumn: jest.fn(),
@@ -26,6 +27,7 @@ const mockBoardState = {
   addAttachment: jest.fn(),
   removeAttachment: jest.fn(),
   getSortedTasks: jest.fn((columnId: string) => []),
+  updateColumnSortOption: jest.fn(),
 };
 
 const renderBoard = () => {

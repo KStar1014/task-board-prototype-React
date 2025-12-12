@@ -77,7 +77,7 @@ export const Column: React.FC<ColumnProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const taskIds = tasks.map(t => t.id);
+  const taskIds = (tasks || []).map(t => t.id);
 
   const combinedRef = (node: HTMLElement | null) => {
     setNodeRef(node);
@@ -138,32 +138,64 @@ export const Column: React.FC<ColumnProps> = ({
       role="region"
       aria-label={`Column: ${column.name}`}
     >
-      <Box 
-        display="flex" 
-        justifyContent="space-between" 
-        alignItems="center" 
-        mb={2}
-      >
-        <Typography 
-          variant="h6" 
-          component="h2"
-          {...listeners}
-          sx={{ 
-            cursor: 'grab', 
-            '&:active': { cursor: 'grabbing' },
-            flex: 1,
-            userSelect: 'none',
-            fontWeight: 600,
-            color: '#2d3748',
-            letterSpacing: '0.3px',
-          }}
-        >
-          {column.name}
-        </Typography>
+      <Box mb={2}>
         <Box 
           display="flex" 
+          justifyContent="space-between" 
           alignItems="center" 
-          gap={1} 
+          mb={1}
+        >
+          <Typography 
+            variant="h6" 
+            component="h2"
+            {...listeners}
+            sx={{ 
+              cursor: 'grab', 
+              '&:active': { cursor: 'grabbing' },
+              flex: 1,
+              userSelect: 'none',
+              fontWeight: 600,
+              color: '#2d3748',
+              letterSpacing: '0.3px',
+            }}
+          >
+            {column.name} ({tasks.length})
+          </Typography>
+          <Box 
+            display="flex" 
+            alignItems="center" 
+            gap={1} 
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditColumn();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              aria-label={`Edit column ${column.name}`}
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteColumn();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              aria-label={`Delete column ${column.name}`}
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+        <Box 
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
@@ -185,30 +217,6 @@ export const Column: React.FC<ColumnProps> = ({
               <MenuItem value="Z-A">Z-A</MenuItem>
             </Select>
           </FormControl>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEditColumn();
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            aria-label={`Edit column ${column.name}`}
-          >
-            <Edit fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteColumn();
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            aria-label={`Delete column ${column.name}`}
-          >
-            <Delete fontSize="small" />
-          </IconButton>
         </Box>
       </Box>
 
@@ -217,7 +225,7 @@ export const Column: React.FC<ColumnProps> = ({
         strategy={verticalListSortingStrategy}
       >
         <Box>
-          {tasks.map((task) => (
+          {(tasks || []).map((task) => (
             <TaskCard
               key={task.id}
               task={task}
