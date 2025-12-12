@@ -57,17 +57,31 @@ export const Board: React.FC = () => {
       const taskId = createTask(taskData);
       
       // Add attachments if files were provided
-      // Use a small delay to ensure React has processed the state update
+      // Pass columnId to directly target the correct column
       if (files && files.length > 0) {
-        // Wait for next tick to ensure state is updated
-        await new Promise(resolve => setTimeout(resolve, 0));
+        // Retry adding attachments with a small delay to ensure state is updated
+        const addAttachmentsWithRetry = async (retries = 3) => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              await new Promise(resolve => setTimeout(resolve, 50 * (i + 1)));
+              for (const file of files) {
+                await addAttachment(taskId, file, taskData.columnId);
+              }
+              return; // Success
+            } catch (error) {
+              if (i === retries - 1) {
+                console.error('Error adding attachments after retries:', error);
+                throw error;
+              }
+              console.log(`Retry ${i + 1} adding attachments...`);
+            }
+          }
+        };
         
         try {
-          for (const file of files) {
-            await addAttachment(taskId, file);
-          }
+          await addAttachmentsWithRetry();
         } catch (error) {
-          console.error('Error adding attachments:', error);
+          console.error('Failed to add attachments after retries:', error);
           // Task is already created, so we continue even if attachments fail
         }
       }

@@ -21,6 +21,8 @@ const defaultColumns: Column[] = [
 
 // Migration function to convert old structure to new structure
 function migrateOldStructure(oldData: any): BoardState {
+  let result: BoardState;
+  
   if (oldData.tasks && Array.isArray(oldData.tasks)) {
     // Old structure: tasks is an array
     const tasksByColumn: { [columnId: string]: Task[] } = {};
@@ -46,16 +48,41 @@ function migrateOldStructure(oldData: any): BoardState {
       tasksByColumn[task.columnId].push(migratedTask);
     });
     
-    return {
+    result = {
       columns: oldData.columns || defaultColumns,
       tasks: tasksByColumn,
     };
+  } else {
+    // Already in new structure or empty
+    result = oldData.tasks ? oldData : {
+      columns: defaultColumns,
+      tasks: {},
+    };
   }
   
-  // Already in new structure or empty
-  return oldData.tasks ? oldData : {
-    columns: defaultColumns,
-    tasks: {},
+  // Reorganize tasks: move tasks to the correct column based on their columnId property
+  const reorganizedTasks: { [columnId: string]: Task[] } = {};
+  
+  // Collect all tasks from all columns
+  const allTasks: Task[] = [];
+  for (const columnId in result.tasks) {
+    result.tasks[columnId].forEach(task => {
+      allTasks.push(task);
+    });
+  }
+  
+  // Reorganize tasks by their columnId property
+  allTasks.forEach(task => {
+    const correctColumnId = task.columnId;
+    if (!reorganizedTasks[correctColumnId]) {
+      reorganizedTasks[correctColumnId] = [];
+    }
+    reorganizedTasks[correctColumnId].push(task);
+  });
+  
+  return {
+    ...result,
+    tasks: reorganizedTasks,
   };
 }
 
@@ -106,22 +133,51 @@ export function useBoardState() {
     updateState((state) => {
       const updatedTasks = { ...state.tasks };
       let found = false;
+      let sourceColumnId: string | undefined;
+      let task: Task | undefined;
       
+      // Find the task and its current location
       for (const columnId in updatedTasks) {
         const taskIndex = updatedTasks[columnId].findIndex(t => t.id === id);
         if (taskIndex !== -1) {
-          updatedTasks[columnId] = [...updatedTasks[columnId]];
-          updatedTasks[columnId][taskIndex] = {
-            ...updatedTasks[columnId][taskIndex],
-            ...updates,
-            updatedAt: new Date().toISOString(),
-          };
+          task = updatedTasks[columnId][taskIndex];
+          sourceColumnId = columnId;
           found = true;
           break;
         }
       }
       
-      return found ? { ...state, tasks: updatedTasks } : state;
+      if (!found || !task || !sourceColumnId) return state;
+      
+      // Check if columnId is being changed
+      const newColumnId = updates.columnId;
+      const isMovingColumn = newColumnId && newColumnId !== sourceColumnId;
+      
+      if (isMovingColumn) {
+        // Remove from source column
+        updatedTasks[sourceColumnId] = updatedTasks[sourceColumnId].filter(t => t.id !== id);
+        
+        // Add to target column (append to end)
+        const targetTasks = updatedTasks[newColumnId] || [];
+        const updatedTask = {
+          ...task,
+          ...updates,
+          columnId: newColumnId,
+          updatedAt: new Date().toISOString(),
+        };
+        updatedTasks[newColumnId] = [...targetTasks, updatedTask];
+      } else {
+        // Update in place
+        updatedTasks[sourceColumnId] = [...updatedTasks[sourceColumnId]];
+        const taskIndex = updatedTasks[sourceColumnId].findIndex(t => t.id === id);
+        updatedTasks[sourceColumnId][taskIndex] = {
+          ...task,
+          ...updates,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      
+      return { ...state, tasks: updatedTasks };
     });
   }, [updateState]);
 
@@ -156,47 +212,10 @@ export function useBoardState() {
   }, [updateState]);
 
   const updateColumn = useCallback((id: string, updates: Partial<Column>) => {
-    updateState((state) => {
-      // If updating the name, check if a column with that name already exists
-      if (updates.name) {
-        const existingColumnWithSameName = state.columns.find(
-          col => col.name === updates.name && col.id !== id
-        );
-        
-        // If a column with the same name exists, merge tasks into it
-        if (existingColumnWithSameName) {
-          const sourceTasks = state.tasks[id] || [];
-          const targetColumnId = existingColumnWithSameName.id;
-          const targetTasks = state.tasks[targetColumnId] || [];
-          
-          // Move all tasks from source column to target column
-          const movedTasks = sourceTasks.map(task => ({
-            ...task,
-            columnId: targetColumnId,
-            updatedAt: new Date().toISOString(),
-          }));
-          
-          const updatedTasks = { ...state.tasks };
-          // Remove tasks from source column
-          delete updatedTasks[id];
-          // Add tasks to target column (append to end)
-          updatedTasks[targetColumnId] = [...targetTasks, ...movedTasks];
-          
-          // Remove the source column since we're merging into existing one
-          return {
-            ...state,
-            columns: state.columns.filter(col => col.id !== id),
-            tasks: updatedTasks,
-          };
-        }
-      }
-      
-      // Normal update: just update the column properties
-      return {
-        ...state,
-        columns: state.columns.map(col => col.id === id ? { ...col, ...updates } : col),
-      };
-    });
+    updateState((state) => ({
+      ...state,
+      columns: state.columns.map(col => col.id === id ? { ...col, ...updates } : col),
+    }));
   }, [updateState]);
 
   const deleteColumn = useCallback((id: string) => {
@@ -282,7 +301,7 @@ export function useBoardState() {
     });
   }, [updateState]);
 
-  const addAttachment = useCallback((taskId: string, file: File) => {
+  const addAttachment = useCallback((taskId: string, file: File, columnId?: string) => {
     return new Promise<Attachment>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -294,10 +313,12 @@ export function useBoardState() {
           data,
         };
 
+        let taskFound = false;
         updateState((state) => {
           const updatedTasks = { ...state.tasks };
           
-          for (const columnId in updatedTasks) {
+          // If columnId is provided, check that column first (more efficient)
+          if (columnId && updatedTasks[columnId]) {
             const taskIndex = updatedTasks[columnId].findIndex(t => t.id === taskId);
             if (taskIndex !== -1) {
               updatedTasks[columnId] = [...updatedTasks[columnId]];
@@ -307,14 +328,35 @@ export function useBoardState() {
                 attachments: [...(task.attachments || []), attachment],
                 updatedAt: new Date().toISOString(),
               };
-              break;
+              taskFound = true;
+              return { ...state, tasks: updatedTasks };
             }
           }
           
-          return { ...state, tasks: updatedTasks };
+          // Fallback: search all columns if columnId not provided or task not found
+          for (const colId in updatedTasks) {
+            const taskIndex = updatedTasks[colId].findIndex(t => t.id === taskId);
+            if (taskIndex !== -1) {
+              updatedTasks[colId] = [...updatedTasks[colId]];
+              const task = updatedTasks[colId][taskIndex];
+              updatedTasks[colId][taskIndex] = {
+                ...task,
+                attachments: [...(task.attachments || []), attachment],
+                updatedAt: new Date().toISOString(),
+              };
+              taskFound = true;
+              return { ...state, tasks: updatedTasks };
+            }
+          }
+          
+          return state;
         });
-
-        resolve(attachment);
+        
+        if (taskFound) {
+          resolve(attachment);
+        } else {
+          reject(new Error(`Task with id ${taskId} not found`));
+        }
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
