@@ -18,6 +18,7 @@ import { TaskCard } from './TaskCard';
 import { TaskForm } from './TaskForm';
 import { ColumnForm } from './ColumnForm';
 import { TaskDetails } from './TaskDetails';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Task } from '../types/Task';
 import { Column as ColumnType, SortOption } from '../types/Column';
 
@@ -49,6 +50,17 @@ export const Board: React.FC = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [defaultColumnId, setDefaultColumnId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    type: 'task' | 'column' | null;
+    id: string | null;
+    name: string | null;
+  }>({
+    open: false,
+    type: null,
+    id: null,
+    name: null,
+  });
 
   const handleCreateTask = async (
     taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'attachments'>, 
@@ -310,7 +322,17 @@ export const Board: React.FC = () => {
                     setIsTaskFormOpen(true);
                   }}
                   onDeleteTask={(taskId) => {
-                    deleteTask(taskId);
+                    const task = columns
+                      .flatMap(col => getSortedTasks(col.id))
+                      .find(t => t.id === taskId);
+                    if (task) {
+                      setConfirmDialog({
+                        open: true,
+                        type: 'task',
+                        id: taskId,
+                        name: task.name,
+                      });
+                    }
                   }}
                   onToggleFavorite={(taskId) => {
                     const task = columns
@@ -329,7 +351,12 @@ export const Board: React.FC = () => {
                     setIsColumnFormOpen(true);
                   }}
                   onDeleteColumn={() => {
-                    deleteColumn(column.id);
+                    setConfirmDialog({
+                      open: true,
+                      type: 'column',
+                      id: column.id,
+                      name: column.name,
+                    });
                   }}
                   onSortOptionChange={(sortOption: SortOption) => {
                     updateColumnSortOption(column.id, sortOption);
@@ -380,9 +407,12 @@ export const Board: React.FC = () => {
             setIsTaskFormOpen(true);
           }}
           onDelete={() => {
-            deleteTask(selectedTask.id);
-            setIsTaskDetailsOpen(false);
-            setSelectedTask(null);
+            setConfirmDialog({
+              open: true,
+              type: 'task',
+              id: selectedTask.id,
+              name: selectedTask.name,
+            });
           }}
           onToggleFavorite={() => {
             updateTask(selectedTask.id, { isFavorite: !selectedTask.isFavorite });
@@ -408,6 +438,44 @@ export const Board: React.FC = () => {
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.type === 'task' ? 'Delete Task' : 'Delete Column'}
+        message={
+          confirmDialog.type === 'task'
+            ? `Are you sure you want to delete the task "${confirmDialog.name}"? This action cannot be undone.`
+            : `Are you sure you want to delete the column "${confirmDialog.name}"? All tasks in this column will also be deleted. This action cannot be undone.`
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={() => {
+          if (confirmDialog.type === 'task' && confirmDialog.id) {
+            deleteTask(confirmDialog.id);
+            // If the task was open in details, close it
+            if (selectedTask?.id === confirmDialog.id) {
+              setIsTaskDetailsOpen(false);
+              setSelectedTask(null);
+            }
+          } else if (confirmDialog.type === 'column' && confirmDialog.id) {
+            deleteColumn(confirmDialog.id);
+          }
+          setConfirmDialog({
+            open: false,
+            type: null,
+            id: null,
+            name: null,
+          });
+        }}
+        onCancel={() => {
+          setConfirmDialog({
+            open: false,
+            type: null,
+            id: null,
+            name: null,
+          });
+        }}
+      />
     </Container>
   );
 };
