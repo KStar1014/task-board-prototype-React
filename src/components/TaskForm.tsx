@@ -35,7 +35,7 @@ interface TaskFormProps {
 }
 
 type ImageItem = 
-  | { type: 'existing'; attachment: Attachment }
+  | { type: 'existing'; file?: File; attachment: Attachment }
   | { type: 'new'; file: File; preview: string };
 
 export const TaskForm: React.FC<TaskFormProps> = ({
@@ -120,7 +120,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       // Get only new files (not existing attachments)
       const newFiles = imageItems
         .filter(item => item.type === 'new')
-        .map(item => item.file);
+        .map(item => item.file) as File[];
       
       // Get removed attachment IDs
       const removedIds = Array.from(removedAttachmentIds);

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a task management application built for the RamSoft React Developer Assessment. The application is inspired by tools such as Jira, Trello, and Basecamp and focuses on advanced interaction patterns, scalable state management, accessibility, and comprehensive test coverage.
+This project is a task management application built React router prototype. The application is inspired by tools such as Jira, Trello, and Basecamp and focuses on advanced interaction patterns, scalable state management, accessibility, and comprehensive test coverage.
 
 The implementation intentionally goes beyond the minimum requirements to demonstrate production ready React design, extensibility, and thoughtful tradeoffs.
 
@@ -196,6 +196,82 @@ http://localhost:3000
 ```
 yarn test
 ```
+
+---
+
+## Deployment to Fly.io
+
+This application can be deployed to Fly.io with zero configuration required.
+
+### Prerequisites
+
+1. **Install Fly CLI**
+   ```bash
+   # Windows (PowerShell)
+   iwr https://fly.io/install.ps1 -useb | iex
+
+   # macOS/Linux
+   curl -L https://fly.io/install.sh | sh
+   ```
+
+2. **Sign up / Login to Fly.io**
+   ```bash
+   fly auth signup
+   # or
+   fly auth login
+   ```
+
+### Deploy Steps
+
+1. **Launch the app (first time only)**
+   ```bash
+   fly launch --no-deploy
+   ```
+
+   When prompted:
+   - App name: Press Enter to use auto-generated name or choose your own
+   - Region: Choose the region closest to you
+   - PostgreSQL/Redis: Select "No" for both
+   - Deploy now: Select "No"
+
+2. **Deploy the application**
+   ```bash
+   fly deploy
+   ```
+
+3. **Open your deployed app**
+   ```bash
+   fly open
+   ```
+
+Your app will be available at: `https://your-app-name.fly.dev`
+
+### Deployment Features
+
+- ✅ **Free tier compatible** - Auto-scales to 0 when not in use
+- ✅ **HTTPS enabled** by default
+- ✅ **Multi-stage Docker build** - Optimized production image (~25MB)
+- ✅ **Nginx server** - Fast static file serving with caching
+- ✅ **React Router support** - All routes work correctly
+- ✅ **Health checks** - Automatic monitoring
+
+### Useful Commands
+
+```bash
+# View application status
+fly status
+
+# View logs
+fly logs
+
+# Scale memory
+fly scale memory 512
+
+# Destroy the app
+fly apps destroy your-app-name
+```
+
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ---
 

@@ -159,7 +159,7 @@ export const Column: React.FC<ColumnProps> = ({
               letterSpacing: '0.3px',
             }}
           >
-            {column.name} ({tasks.length})
+            {column.name} ({tasks && tasks.length})
           </Typography>
           <Box 
             display="flex" 
