@@ -1,10 +1,33 @@
 # React Task Board Assessment
 
+A production-ready task management application built with React, TypeScript, and Material-UI. Inspired by Jira and Trello, featuring drag-and-drop, file attachments, and comprehensive accessibility support.
+
+🔗 **Live Demo**: [https://task-board-snowy-glitter-6111.fly.dev](https://task-board-snowy-glitter-6111.fly.dev)
+
+---
+
+## Quick Start
+
+```bash
+# Install dependencies
+yarn install
+
+# Start development server
+yarn start
+
+# Run tests
+yarn test
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000)
+
+---
+
 ## Overview
 
-This project is a task management application built React router prototype. The application is inspired by tools such as Jira, Trello, and Basecamp and focuses on advanced interaction patterns, scalable state management, accessibility, and comprehensive test coverage.
+This project is a task management application built with React 18, TypeScript, and React Router. The application is inspired by tools such as Jira, Trello, and Basecamp and focuses on advanced interaction patterns, scalable state management, accessibility, and comprehensive test coverage.
 
-The implementation intentionally goes beyond the minimum requirements to demonstrate production ready React design, extensibility, and thoughtful tradeoffs.
+The implementation intentionally goes beyond the minimum requirements to demonstrate production-ready React design, extensibility, and thoughtful tradeoffs.
 
 ---
 
@@ -36,29 +59,36 @@ The implementation intentionally goes beyond the minimum requirements to demonst
 
 ### Sorting and Priority Rules
 - Favorited tasks are always pinned to the top of each column
-- Manual ordering supported within favorite and non favorite groups
+- Manual ordering supported within favorite and non-favorite groups
 - Alphabetical sorting by task title used as a fallback
 - Sorting is applied independently per column
 - Sorting updates immediately after edits, moves, or favorite changes
+
+### State Management
+- **Context API** with `TaskBoardContext` for global state
+- **Custom hooks** (`useBoardState`, `useLocalStorage`) for logic encapsulation
+- Centralized state management without Redux complexity
+- Automatic persistence to LocalStorage on state changes
 
 ### Accessibility
 - Full keyboard navigation support
 - ARIA roles and labels for interactive elements
 - Visible focus indicators
-- Screen reader friendly drag and drop announcements
+- Screen reader-friendly drag and drop announcements
 
 ---
 
 ## Technical Stack
 
-- React with Hooks API
-- React Router
-- Material UI
-- @dnd-kit for drag and drop
-- Jest
-- React Testing Library
-- LocalStorage for persistence
-- Yarn as the package manager
+- **React 18** with Hooks API
+- **React Router 6** for navigation
+- **Material-UI (MUI) 5** for UI components
+- **@dnd-kit** for accessible drag and drop
+- **TypeScript** for type safety
+- **Jest** and **React Testing Library** for testing
+- **LocalStorage** for data persistence
+- **date-fns** for date formatting
+- **Yarn** as the package manager
 
 ---
 
@@ -68,30 +98,39 @@ The implementation intentionally goes beyond the minimum requirements to demonst
 src/
 ├── components/
 │   ├── Board.tsx
+│   ├── Board.test.tsx
 │   ├── Column.tsx
+│   ├── Column.test.tsx
+│   ├── ColumnForm.tsx
+│   ├── ColumnForm.test.tsx
+│   ├── ConfirmDialog.tsx
+│   ├── ConfirmDialog.test.tsx
 │   ├── TaskCard.tsx
+│   ├── TaskCard.test.tsx
 │   ├── TaskForm.tsx
-│   ├── TaskDetails.tsx
-│   └── ColumnForm.tsx
+│   ├── TaskForm.test.tsx
+│   └── TaskDetails.tsx
+├── context/
+│   └── TaskBoardContext.tsx
 ├── hooks/
 │   ├── useBoardState.ts
-│   └── useLocalStorage.ts
+│   ├── useLocalStorage.ts
+│   └── useLocalStorage.test.ts
 ├── dnd/
-│   └── dragConfig.ts
+│   └── dragConfig.tsx
+├── pages/
+│   └── TaskDetailsPage.tsx
 ├── routes/
 │   └── AppRoutes.tsx
-├── tests/
-│   ├── Board.test.tsx
-│   ├── DragAndDrop.test.tsx
-│   ├── SortingRules.test.tsx
-│   ├── Attachments.test.tsx
-│   └── LocalStorage.test.tsx
 ├── types/
 │   ├── Task.ts
 │   ├── Column.ts
 │   └── Attachment.ts
 ├── App.tsx
-└── index.tsx
+├── index.tsx
+├── index.css
+├── setupTests.ts
+└── test-utils.tsx
 ```
 
 ---
@@ -100,37 +139,37 @@ src/
 
 ### Column
 
-```
-Column {
-  id: string
-  name: string
-  order: number
+```typescript
+interface Column {
+  id: string;
+  name: string;
+  order: number;
 }
 ```
 
 ### Task
 
-```
-Task {
-  id: string
-  title: string
-  description: string
-  deadline: string
-  favorite: boolean
-  columnId: string
-  order: number
-  attachments: Attachment[]
+```typescript
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  deadline: string;
+  favorite: boolean;
+  columnId: string;
+  order: number;
+  attachments: Attachment[];
 }
 ```
 
 ### Attachment
 
-```
-Attachment {
-  id: string
-  name: string
-  type: string
-  data: string
+```typescript
+interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  data: string; // Base64 encoded image data
 }
 ```
 
@@ -140,10 +179,11 @@ All entities are persisted in LocalStorage.
 
 ## Drag and Drop Behavior
 
-- Columns and tasks are draggable using @dnd-kit
+- Columns and tasks are draggable using **@dnd-kit**
 - Dragging updates order values explicitly
-- Sorting rules are re applied after drag events
+- Sorting rules are re-applied after drag events
 - Keyboard users can move tasks and columns using accessible controls
+- Drag handles and visual feedback for better UX
 
 ---
 
@@ -158,17 +198,28 @@ All entities are persisted in LocalStorage.
 
 ## Testing Strategy
 
-The project uses Jest and React Testing Library with a user focused approach.
+The project uses **Jest** and **React Testing Library** with a user-focused approach.
+
+### Test Files
+- `Board.test.tsx` - Board component and overall functionality
+- `Column.test.tsx` - Column component behavior
+- `ColumnForm.test.tsx` - Column creation and editing
+- `ConfirmDialog.test.tsx` - Confirmation dialog interactions
+- `TaskCard.test.tsx` - Task card display and interactions
+- `TaskForm.test.tsx` - Task creation and editing forms
+- `useLocalStorage.test.ts` - LocalStorage hook functionality
 
 ### Covered Scenarios
 - Create, edit, delete tasks
 - Column creation, deletion, and reordering
 - Drag tasks across columns
-- Keyboard based drag interactions
+- Keyboard-based drag interactions
 - Favorite task sorting priority
 - Manual ordering within columns
 - Attachment upload and preview
 - LocalStorage persistence across reloads
+- Form validation and error handling
+- Confirmation dialogs
 
 Tests interact with the UI and avoid implementation detail coupling.
 
@@ -177,12 +228,12 @@ Tests interact with the UI and avoid implementation detail coupling.
 ## Running the Project
 
 ### Install Dependencies
-```
+```bash
 yarn install
 ```
 
 ### Start Development Server
-```
+```bash
 yarn start
 ```
 
@@ -193,15 +244,21 @@ http://localhost:3000
 
 ## Running Tests
 
-```
+### Run all tests
+```bash
 yarn test
+```
+
+### Run tests in watch mode
+```bash
+yarn test:watch
 ```
 
 ---
 
 ## Deployment to Fly.io
 
-This application can be deployed to Fly.io with zero configuration required.
+This application is deployed to Fly.io and can be accessed at: `https://task-board-snowy-glitter-6111.fly.dev`
 
 ### Prerequisites
 
@@ -230,7 +287,7 @@ This application can be deployed to Fly.io with zero configuration required.
 
    When prompted:
    - App name: Press Enter to use auto-generated name or choose your own
-   - Region: Choose the region closest to you
+   - Region: Choose the region closest to you (current: yyz - Toronto)
    - PostgreSQL/Redis: Select "No" for both
    - Deploy now: Select "No"
 
@@ -249,11 +306,12 @@ Your app will be available at: `https://your-app-name.fly.dev`
 ### Deployment Features
 
 - ✅ **Free tier compatible** - Auto-scales to 0 when not in use
-- ✅ **HTTPS enabled** by default
+- ✅ **HTTPS enabled** by default with force HTTPS
 - ✅ **Multi-stage Docker build** - Optimized production image (~25MB)
-- ✅ **Nginx server** - Fast static file serving with caching
-- ✅ **React Router support** - All routes work correctly
-- ✅ **Health checks** - Automatic monitoring
+- ✅ **Nginx Alpine server** - Fast static file serving with caching
+- ✅ **React Router support** - All routes work correctly with SPA fallback
+- ✅ **Auto start/stop machines** - Efficient resource usage
+- ✅ **Shared CPU 1x** - Minimal resource footprint
 
 ### Useful Commands
 
@@ -268,7 +326,7 @@ fly logs
 fly scale memory 512
 
 # Destroy the app
-fly apps destroy your-app-name
+fly apps destroy task-board-snowy-glitter-6111
 ```
 
 For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
@@ -277,9 +335,25 @@ For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ## Design Decisions and Tradeoffs
 
-- Redux was intentionally avoided to reduce boilerplate and complexity
-- @dnd-kit was selected for accessibility and maintainability
-- Attachments are stored locally to avoid backend complexity
+### State Management
+- **Context API + Custom Hooks** instead of Redux to reduce boilerplate
+- `TaskBoardContext` provides centralized state management
+- `useBoardState` hook encapsulates all business logic
+- `useLocalStorage` hook handles persistence layer
+
+### Drag and Drop
+- **@dnd-kit** selected for superior accessibility and maintainability
+- Keyboard navigation support built-in
+- Screen reader announcements for drag operations
+
+### Data Persistence
+- **LocalStorage** for client-side persistence (no backend required)
+- Attachments stored as Base64 to avoid external dependencies
+- Size limits respected to prevent storage quota issues
+
+### Architecture
+- **Co-located tests** with components for better maintainability
+- **TypeScript** for type safety and better developer experience
 - Sorting logic is deterministic and centralized
 - Feature scope prioritized correctness and testability
 
@@ -287,19 +361,37 @@ For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ## Known Limitations
 
-- LocalStorage size limits restrict large file attachments
-- No multi user or authentication support
-- No backend persistence
+- **LocalStorage size limits** restrict large file attachments (typically 5-10MB)
+- **No multi-user support** or real-time collaboration
+- **No backend persistence** - data is stored locally in browser
+- **No authentication** or user management
+- **Image attachments only** - other file types not supported
 
 ---
 
 ## Future Improvements
 
-- Backend integration for collaboration
-- Authentication and role based access
-- Real time updates
-- Advanced search and filtering
-- Performance optimizations for large boards
+- **Backend integration** for multi-user collaboration
+- **Authentication and authorization** with role-based access control
+- **Real-time updates** using WebSockets
+- **Advanced search and filtering** capabilities
+- **Performance optimizations** for large boards (virtualization)
+- **Mobile responsive design** improvements
+- **Dark mode** support
+- **Export/Import** board data (JSON format)
+- **Task dependencies** and relationships
+- **Activity history** and audit logs
+
+---
+
+## Configuration Files
+
+- **package.json** - Dependencies and scripts
+- **tsconfig.json** - TypeScript configuration
+- **Dockerfile** - Multi-stage Docker build
+- **nginx.conf** - Nginx server configuration
+- **fly.toml** - Fly.io deployment configuration
+- **.dockerignore** - Docker build exclusions
 
 ---
 
